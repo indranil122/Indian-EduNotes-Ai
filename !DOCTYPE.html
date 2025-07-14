@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Full-Stack Developer Roadmap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Warm Neutral Harmony" - A calming palette with a base of #F5F5F5 (bg-neutral-100), primary text in #171717 (text-neutral-900), section headers in #44403C (text-stone-700), and a subtle accent of #4F46E5 (indigo-600) for interactive elements and highlights. -->
+    <!-- Application Structure Plan: A non-linear, interactive timeline/dashboard structure is chosen over a simple linear document. The user is greeted with an overview and a visual timeline representing the 10 months. Clicking on a month reveals detailed content for that period in a main content area. This design promotes user agency, allowing them to jump to any month of interest, and makes the vast amount of information feel manageable and less overwhelming. It visually represents the journey, enhancing motivation. A central chart visualizes the focus shift from frontend to backend over time, providing an at-a-glance summary. This structure prioritizes usability and exploration over the report's original narrative flow. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: 10-Month Learning Schedule -> Goal: Visualize journey & progress -> Viz/Presentation: Interactive Horizontal Timeline (HTML/CSS/JS) -> Interaction: Click month to display details -> Justification: Breaks down the long journey into manageable, explorable steps.
+        - Report Info: Distribution of effort (Foundations, Frontend, Backend, Integration) -> Goal: Compare time allocation -> Viz/Presentation: Doughnut Chart (Chart.js/Canvas) -> Interaction: Hover to see details -> Justification: Provides a quick, high-level overview of the learning phases.
+        - Report Info: Core Technologies & Skills per month -> Goal: Organize & Inform -> Viz/Presentation: Tabbed content cards (HTML/CSS/JS) for 'Skills', 'Resources', 'Projects' -> Interaction: Click tabs to switch views -> Justification: Organizes dense information neatly within each month's view, preventing cognitive overload.
+        - Report Info: Technology Stacks (MERN vs. Django) -> Goal: Compare alternatives -> Viz/Presentation: Side-by-side comparison cards (HTML/CSS) -> Interaction: Static display for clarity -> Justification: Clearly presents the choice between backend stacks.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F5;
+        }
+        .timeline-item {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .timeline-item.active {
+            background-color: #4F46E5;
+            color: white;
+            transform: translateY(-5px);
+        }
+        .timeline-item.active .timeline-month {
+            color: white;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .tab-button {
+            transition: all 0.2s ease;
+        }
+        .tab-button.active {
+            border-color: #4F46E5;
+            color: #4F46E5;
+            background-color: #EEF2FF;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: auto;
+            max-height: 400px;
+        }
+        .llm-output {
+            background-color: #f8fafc; /* Slate-50 */
+            border-left: 4px solid #6366f1; /* Indigo-500 */
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            font-style: italic;
+            color: #475569; /* Slate-600 */
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4F46E5;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .skill-explanation-popup, .resource-summary-popup {
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            max-width: 300px;
+            font-size: 0.875rem;
+            color: #334155;
+            top: 100%; /* Position below the button */
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 0.5rem;
+            display: none; /* Hidden by default */
+        }
+        .skill-item-container, .resource-item-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="text-neutral-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-stone-800 mb-2">Your 10-Month Full-Stack Roadmap</h1>
+            <p class="text-lg text-stone-600">An interactive guide to becoming an intermediate developer.</p>
+        </header>
+
+        <main>
+            <section id="overview" class="mb-16 bg-white p-6 md:p-8 rounded-2xl shadow-sm">
+                 <h2 class="text-2xl font-bold text-stone-700 mb-4 text-center">Journey Overview</h2>
+                 <p class="text-center text-stone-600 mb-8 max-w-3xl mx-auto">This roadmap is an intensive, project-based journey designed to take you from foundational knowledge to an intermediate full-stack developer in 10 months. The structure emphasizes mastering fundamentals, diving deep into a modern frontend framework, building robust backend services, and finally, integrating and deploying a complete application. The chart below illustrates the primary focus for each phase of your learning journey.</p>
+                <div class="chart-container">
+                    <canvas id="overviewChart"></canvas>
+                </div>
+            </section>
+
+            <section id="timeline-navigation" class="mb-12">
+                <h2 class="text-2xl font-bold text-stone-700 mb-6 text-center">Interactive Timeline</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-2 md:gap-4">
+                </div>
+            </section>
+
+            <section id="content-display" class="bg-white p-6 md:p-10 rounded-2xl shadow-lg min-h-[500px]">
+            </section>
+        </main>
+
+        <footer class="text-center mt-16 text-stone-500">
+            <p>Built to accelerate your learning journey. Keep coding!</p>
+        </footer>
+    </div>
+
+    <script>
+        const roadmapData = [
+            {
+                month: 1,
+                title: "HTML & CSS Mastery",
+                phase: "Foundations",
+                description: "The journey begins with the foundational languages that define the structure and appearance of the web. Mastering these is crucial for long-term success, as they form the bedrock of all web development.",
+                skills: ["Semantic HTML5", "Forms & Inputs", "Responsive Design", "Flexbox & CSS Grid", "CSS Frameworks (Bootstrap/Tailwind)"],
+                resources: ["MDN Web Docs", "freeCodeCamp (Responsive Web Design)", "Kevin Powell's YouTube", "W3Schools"],
+                projects: ["Static Personal Portfolio Website", "Multi-Page Blog Layout"]
+            },
+            {
+                month: 2,
+                title: "JavaScript Fundamentals",
+                phase: "Foundations",
+                description: "Introduce interactivity and dynamic behavior to your web pages. A deep understanding of JavaScript fundamentals is non-negotiable for building modern, engaging user experiences.",
+                skills: ["Core Concepts (Variables, Data Types)", "DOM Manipulation", "Event Handling", "Asynchronous JS (Promises, Async/Await)", "ES6+ Syntax"],
+                resources: ["MDN JavaScript Guide", "freeCodeCamp (JS Algorithms)", "JavaScript 30", "Scrimba"],
+                projects: ["Interactive To-Do List App", "Basic Calculator", "Simple Image Carousel"]
+            },
+            {
+                month: 3,
+                title: "Git & Command Line",
+                phase: "Foundations",
+                description: "Learn the essential tools for managing code and collaborating with other developers. Git is the industry standard for version control and a prerequisite for any professional development role.",
+                skills: ["Git Basics (init, add, commit, push, pull)", "Branching & Merging", "Resolving Merge Conflicts", "Using GitHub", "Basic Command Line Navigation"],
+                resources: ["Learn Git Branching (Interactive)", "freeCodeCamp Git Course", "Official Git Documentation"],
+                projects: ["Manage all previous and future projects with Git.", "Contribute to a small open-source project (optional)."]
+            },
+            {
+                month: 4,
+                title: "Intro to React",
+                phase: "Frontend",
+                description: "Dive into the most popular JavaScript library for building user interfaces. React's component-based architecture is the foundation for creating modern, scalable Single-Page Applications (SPAs).",
+                skills: ["JSX Syntax", "Components & Props", "State Management (useState)", "React Hooks (useEffect)", "Component Lifecycle"],
+                resources: ["Official React Docs", "Full Stack Open (Part 1)", "Scrimba: Learn React"],
+                projects: ["Build a simple SPA version of your portfolio.", "Weather App with a public API."]
+            },
+            {
+                month: 5,
+                title: "Advanced React",
+                phase: "Frontend",
+                description: "As applications grow, managing data flow and navigation becomes complex. This month focuses on advanced state management techniques and client-side routing to build sophisticated applications.",
+                skills: ["State Management (Context API, Redux/Zustand)", "Client-Side Routing (React Router)", "Custom Hooks", "Fetching data within React"],
+                resources: ["Full Stack Open (Parts 6 & 7)", "Official Redux/React Router Docs", "Advanced Scrimba courses"],
+                projects: ["E-commerce product catalog with filtering and routing.", "A complex dashboard with multiple views."]
+            },
+            {
+                month: 6,
+                title: "Frontend Polish & Performance",
+                phase: "Frontend",
+                description: "A functional app is just the start. A professional developer delivers a polished, high-performing, and accessible user experience. This month is about refining your work to production quality.",
+                skills: ["Advanced Responsive Design", "Performance Optimization (Code Splitting, Lazy Loading)", "Image Optimization", "Webpack/Vite Basics", "Accessibility (ARIA)"],
+                resources: ["MDN Web Performance", "Google's web.dev", "Kevin Powell's advanced CSS videos"],
+                projects: ["Optimize and refactor all previous portfolio projects.", "Run Lighthouse audits and improve scores."]
+            },
+            {
+                month: 7,
+                title: "Backend Intro: Node.js & Express",
+                phase: "Backend",
+                description: "Transition to the server-side. Using Node.js allows you to leverage your JavaScript skills to build the backend, creating APIs that will power your applications.",
+                skills: ["Node.js Runtime", "NPM (Node Package Manager)", "Express.js Framework", "RESTful API Principles", "Creating API Endpoints (GET, POST, etc.)"],
+                resources: ["Full Stack Open (Part 3)", "Official Express.js Docs", "Codecademy: Learn Node.js"],
+                projects: ["Build a simple REST API for a blog or to-do list.", "Refactor a frontend project to fetch data from your new API."]
+            },
+            {
+                month: 8,
+                title: "Databases: SQL & NoSQL",
+                phase: "Backend",
+                description: "Databases are the persistent memory of an application. Understand both relational (SQL) and non-relational (NoSQL) databases to make informed architectural decisions.",
+                skills: ["SQL Fundamentals (CRUD, Joins)", "Database Schema Design (PostgreSQL/MySQL)", "NoSQL Concepts (MongoDB)", "Using an ORM/ODM (Prisma/Mongoose)"],
+                resources: ["SQLZoo & SQLBolt (for practice)", "freeCodeCamp SQL Course", "MongoDB University Basics"],
+                projects: ["Design and implement a database for your blog API.", "Integrate MongoDB into a new or existing Node.js project."]
+            },
+            {
+                month: 9,
+                title: "Advanced Backend & APIs",
+                phase: "Backend",
+                description: "Elevate your backend service from functional to robust, secure, and extensible. This is a critical step in building production-ready applications that handle real-world scenarios.",
+                skills: ["User Authentication (JWT, Sessions)", "Password Hashing & Security", "Authorization & Role-Based Access", "Integrating Third-Party APIs"],
+                resources: ["Full Stack Open (Part 4)", "Passport.js Documentation", "LearnDjango.com (for Python alternative)"],
+                projects: ["Add full user registration and login to an application.", "Integrate a payment gateway or social media API."]
+            },
+            {
+                month: 10,
+                title: "Integration & Deployment",
+                phase: "Full-Stack",
+                description: "Bring it all together. The final month focuses on connecting the frontend and backend into a cohesive application and making it accessible to the world by deploying it to a live server.",
+                skills: ["Full-Stack Integration", "CORS", "Environment Variables", "Deployment (Vercel, Netlify, AWS)", "CI/CD Basics", "Containerization (Docker basics)"],
+                resources: ["Full Stack Open (Parts 11 & 12)", "Cloud provider documentation (AWS, Google Cloud)", "DigitalOcean Tutorials"],
+                projects: ["**Capstone Project:** Build and deploy a complete, full-stack MERN application (e.g., social media clone, project management tool).", "Refine and document your entire portfolio for job applications."]
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const timelineNav = document.querySelector('#timeline-navigation .grid');
+            const contentDisplay = document.getElementById('content-display');
+            let activeMonth = 1;
+
+            const apiKey = ""; // Gemini API Key
+
+            const generateTextWithGemini = async (prompt) => {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        console.error('Unexpected API response structure:', result);
+                        return 'Could not generate content. Please try again.';
+                    }
+                } catch (error) {
+                    console.error('Error calling Gemini API:', error);
+                    return 'Error generating content. Please check your network connection or try again later.';
+                }
+            };
+
+            const renderTimeline = () => {
+                timelineNav.innerHTML = roadmapData.map(item => `
+                    <div class="timeline-item ${item.month === activeMonth ? 'active' : ''} text-center bg-white p-3 rounded-lg shadow-sm hover:shadow-md hover:transform hover:-translate-y-1" data-month="${item.month}">
+                        <div class="font-bold text-lg text-stone-700">${item.month}</div>
+                        <div class="text-xs text-stone-500 timeline-month">${item.title.split(' ')[0]}</div>
+                    </div>
+                `).join('');
+            };
+
+            const renderContent = () => {
+                const data = roadmapData.find(item => item.month === activeMonth);
+                if (!data) return;
+
+                contentDisplay.innerHTML = `
+                    <div class="content-section active">
+                        <div class="mb-8">
+                            <p class="text-sm font-semibold text-indigo-600 uppercase tracking-wide mb-1">Month ${data.month}: ${data.phase}</p>
+                            <h2 class="text-3xl md:text-4xl font-bold text-stone-800">${data.title}</h2>
+                            <p class="mt-4 text-lg text-stone-600">${data.description}</p>
+                        </div>
+
+                        <div>
+                            <div class="border-b border-gray-200 mb-6">
+                                <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                                    <button class="tab-button whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm active" data-tab="skills">Key Skills</button>
+                                    <button class="tab-button whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm" data-tab="resources">Resources</button>
+                                    <button class="tab-button whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm" data-tab="projects">Projects</button>
+                                </nav>
+                            </div>
+
+                            <div id="tab-content-container">
+                                <div class="tab-content active" data-tab-content="skills">
+                                    <ul class="space-y-3">
+                                        ${data.skills.map(skill => `
+                                            <li class="flex items-center skill-item-container">
+                                                <span class="text-indigo-500 mr-3 mt-1">✓</span>
+                                                <span class="text-stone-700">${skill}</span>
+                                                <button class="ml-2 px-2 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition-colors skill-explainer-button" data-skill="${skill}">✨ Explain</button>
+                                                <div class="skill-explanation-popup"></div>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                    <button id="generate-interview-questions" class="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition-colors">✨ Generate Interview Questions</button>
+                                    <div id="interview-questions-output" class="llm-output hidden"></div>
+                                </div>
+                                <div class="tab-content" data-tab-content="resources">
+                                     <ul class="space-y-3">
+                                        ${data.resources.map(res => `
+                                            <li class="flex items-center resource-item-container">
+                                                <span class="text-indigo-500 mr-3 mt-1">🔗</span>
+                                                <span class="text-stone-700">${res}</span>
+                                                <button class="ml-2 px-2 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition-colors resource-summarizer-button" data-resource="${res}">✨ Summarize</button>
+                                                <div class="resource-summary-popup"></div>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                                <div class="tab-content" data-tab-content="projects">
+                                     <ul class="space-y-3 mb-4" id="project-list">
+                                        ${data.projects.map(proj => `<li class="flex items-start"><span class="text-indigo-500 mr-3 mt-1">🎯</span><span class="text-stone-700">${proj}</span></li>`).join('')}
+                                    </ul>
+                                    <button id="generate-project-idea" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition-colors">✨ Get More Project Ideas</button>
+                                    <div id="project-idea-output" class="llm-output hidden"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                addTabListeners();
+                addGeminiFeaturesListeners(data);
+            };
+
+            const addTabListeners = () => {
+                const tabButtons = contentDisplay.querySelectorAll('.tab-button');
+                const tabContents = contentDisplay.querySelectorAll('.tab-content');
+
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const tab = button.dataset.tab;
+                        
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+
+                        tabContents.forEach(content => {
+                            content.classList.toggle('active', content.dataset.tabContent === tab);
+                        });
+                    });
+                });
+            };
+
+            const addGeminiFeaturesListeners = (currentMonthData) => {
+                // Project Idea Generator
+                const generateProjectButton = document.getElementById('generate-project-idea');
+                const projectIdeaOutput = document.getElementById('project-idea-output');
+                if (generateProjectButton) {
+                    generateProjectButton.addEventListener('click', async () => {
+                        projectIdeaOutput.classList.remove('hidden');
+                        projectIdeaOutput.innerHTML = '<div class="loading-spinner"></div> Generating a new project idea...';
+
+                        const prompt = `You are an expert full-stack development mentor. The user is currently in Month ${currentMonthData.month} of their 10-month roadmap, focusing on '${currentMonthData.title}'. They are learning skills like: ${currentMonthData.skills.join(', ')}. They have already worked on projects like: ${currentMonthData.projects.join(', ')}. Suggest ONE *new*, *detailed*, and *practical* full-stack project idea that leverages the skills for this month and is suitable for an intermediate learner. Describe the project's core functionality, key technologies to use (from the skills list), and a few potential features. Keep it concise, around 100-150 words.`;
+                        
+                        const generatedIdea = await generateTextWithGemini(prompt);
+                        projectIdeaOutput.innerHTML = generatedIdea;
+                    });
+                }
+
+                // Skill Explainer
+                const skillExplainerButtons = contentDisplay.querySelectorAll('.skill-explainer-button');
+                skillExplainerButtons.forEach(button => {
+                    let explanationPopup = button.nextElementSibling; // The div for the popup
+
+                    button.addEventListener('click', async () => {
+                        const skill = button.dataset.skill;
+                        if (explanationPopup.style.display === 'block') {
+                            explanationPopup.style.display = 'none';
+                            return;
+                        }
+
+                        explanationPopup.style.display = 'block';
+                        explanationPopup.innerHTML = '<div class="loading-spinner"></div> Loading explanation...';
+
+                        const prompt = `You are a concise full-stack development instructor. Explain the skill '${skill}' in the context of full-stack web development. Keep the explanation to 1-2 sentences.`;
+                        const explanation = await generateTextWithGemini(prompt);
+                        explanationPopup.innerHTML = explanation;
+                    });
+
+                    // Hide popup when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (!button.contains(e.target) && !explanationPopup.contains(e.target)) {
+                            explanationPopup.style.display = 'none';
+                        }
+                    });
+                });
+
+                // Resource Summarizer
+                const resourceSummarizerButtons = contentDisplay.querySelectorAll('.resource-summarizer-button');
+                resourceSummarizerButtons.forEach(button => {
+                    let summaryPopup = button.nextElementSibling;
+
+                    button.addEventListener('click', async () => {
+                        const resource = button.dataset.resource;
+                        if (summaryPopup.style.display === 'block') {
+                            summaryPopup.style.display = 'none';
+                            return;
+                        }
+
+                        summaryPopup.style.display = 'block';
+                        summaryPopup.innerHTML = '<div class="loading-spinner"></div> Summarizing resource...';
+
+                        const prompt = `You are a helpful study guide. Briefly summarize what '${resource}' is or why it is a good resource for learning full-stack development skills relevant to Month ${currentMonthData.month} (${currentMonthData.title}). Keep it to 2-3 sentences.`;
+                        const summary = await generateTextWithGemini(prompt);
+                        summaryPopup.innerHTML = summary;
+                    });
+
+                    document.addEventListener('click', (e) => {
+                        if (!button.contains(e.target) && !summaryPopup.contains(e.target)) {
+                            summaryPopup.style.display = 'none';
+                        }
+                    });
+                });
+
+                // Interview Question Generator
+                const generateInterviewQuestionsButton = document.getElementById('generate-interview-questions');
+                const interviewQuestionsOutput = document.getElementById('interview-questions-output');
+                if (generateInterviewQuestionsButton) {
+                    generateInterviewQuestionsButton.addEventListener('click', async () => {
+                        interviewQuestionsOutput.classList.remove('hidden');
+                        interviewQuestionsOutput.innerHTML = '<div class="loading-spinner"></div> Generating interview questions...';
+
+                        const prompt = `You are a technical interviewer. Generate 3 common interview questions related to the following full-stack development skills for Month ${currentMonthData.month} (${currentMonthData.title}): ${currentMonthData.skills.join(', ')}. Format them as a numbered list.`;
+                        
+                        const questions = await generateTextWithGemini(prompt);
+                        interviewQuestionsOutput.innerHTML = questions;
+                    });
+                }
+            };
+            
+            timelineNav.addEventListener('click', (e) => {
+                const timelineItem = e.target.closest('.timeline-item');
+                if (timelineItem) {
+                    activeMonth = parseInt(timelineItem.dataset.month);
+                    renderTimeline();
+                    renderContent();
+                }
+            });
+
+            const renderOverviewChart = () => {
+                const ctx = document.getElementById('overviewChart').getContext('2d');
+                const phaseCounts = roadmapData.reduce((acc, item) => {
+                    acc[item.phase] = (acc[item.phase] || 0) + 1;
+                    return acc;
+                }, {});
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(phaseCounts),
+                        datasets: [{
+                            label: 'Months per Phase',
+                            data: Object.values(phaseCounts),
+                            backgroundColor: [
+                                'rgba(165, 180, 252, 0.7)', // Indigo-300
+                                'rgba(129, 140, 248, 0.7)', // Indigo-400
+                                'rgba(99, 102, 241, 0.7)', // Indigo-500
+                                'rgba(79, 70, 229, 0.7)',  // Indigo-600
+                            ],
+                            borderColor: [
+                                'rgba(165, 180, 252, 1)',
+                                'rgba(129, 140, 248, 1)',
+                                'rgba(99, 102, 241, 1)',
+                                'rgba(79, 70, 229, 1)',
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += context.parsed + ' months';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+
+            renderTimeline();
+            renderContent();
+            renderOverviewChart();
+        });
+    </script>
+</body>
+</html>
